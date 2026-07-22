@@ -14,7 +14,7 @@ const schemas = require('./schema');
 async function initDb() {
   for (const schema of schemas) {
     if (schema.temporary) {
-      await pool.query(`DROP TABLE IF EXISTS ${schema.name};`);
+      await pool.query(`DROP TABLE IF EXISTS ${schema.name} CASCADE;`);
     }
 
     for (const statement of schema.sql) {

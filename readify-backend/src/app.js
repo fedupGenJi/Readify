@@ -6,10 +6,40 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+app.locals.dbReady = false;
+
 app.use(cors());
 app.use(express.json());
 
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  const receivedAt = new Date().toISOString();
+
+  console.log(`[${receivedAt}] [REQ] ${req.method} ${req.originalUrl} -> received`);
+
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    console.log(`[${new Date().toISOString()}] [REQ] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${durationMs}ms)`);
+  });
+
+  next();
+});
+
+app.get('/health', (req, res) => {
+  if (!app.locals.dbReady) {
+    return res.status(503).json({ status: 'db-unavailable', database: 'unavailable' });
+  }
+
+  return res.json({ status: 'ok', database: 'ready' });
+});
+
+app.use((req, res, next) => {
+  if (!app.locals.dbReady && req.path !== '/health') {
+    return res.status(503).json({ error: 'Database unavailable. Please try again later.' });
+  }
+
+  next();
+});
 
 app.use('/api/auth', authRoutes);
 
