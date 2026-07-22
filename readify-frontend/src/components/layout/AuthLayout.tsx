@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import { BookOpen } from 'lucide-react';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -8,7 +9,7 @@ interface AuthLayoutProps {
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="flex min-h-screen w-full bg-background font-sans">
-      <div className="relative hidden w-[45%] flex-col justify-between overflow-hidden bg-gradient-to-br from-primary to-secondary px-12 py-10 text-white lg:flex">
+      <div className="relative hidden w-[45%] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#5A4EF8] via-[#5546E8] to-[#4338CA] px-12 py-10 text-white lg:flex">
         <Logo />
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-10 py-10">
@@ -67,20 +68,7 @@ function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <div className="relative z-10 flex items-center gap-2">
       <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${dark ? 'bg-primary' : 'bg-white/15'}`}>
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
-        </svg>
+        <BookOpen className="text-white" size={22} />
       </div>
       <span className={`text-lg font-bold ${dark ? 'text-text' : 'text-white'}`}>Readify</span>
     </div>
