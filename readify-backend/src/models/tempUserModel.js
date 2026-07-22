@@ -86,8 +86,17 @@ async function createResetRequest({ gmail, password, otp, otpExpiresAt }) {
   return rows[0];
 }
 
+async function findResetPendingByGmail(gmail) {
+  const { rows } = await pool.query(
+    `SELECT * FROM temp_users WHERE gmail = $1 AND signup_type = 'reset'`,
+    [gmail]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   findLocalPendingByGmail,
+  findResetPendingByGmail,
   createLocalSignup,
   updateOtp,
   isUsernameReserved,
