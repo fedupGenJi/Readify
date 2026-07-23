@@ -77,6 +77,7 @@ support password reset.
 | published_date | |
 | cover_image | |
 | rating | numeric(2,1), defaults 0 |
+| no_of_ratings | integer default 0 |
 | source | `'catalog' \| 'user_submitted'`, defaults `'catalog'` — see note below |
 | added_by | FK → users, nullable (`SET NULL` on user deletion) — who submitted it, if `source = 'user_submitted'` |
 | created_at | |

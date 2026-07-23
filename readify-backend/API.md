@@ -191,3 +191,95 @@ into the real `users` row, and deletes the temp row.
 ```
 
 **Errors:** `404` no reset request found · `410` OTP expired · `400` incorrect OTP
+
+## Profile
+
+All three routes below work for logged-out visitors — they use optional
+auth, not required auth. If a valid `Authorization: Bearer <token>` header
+is sent, the response is tailored to who's asking; if not, the viewer is
+treated as a stranger.
+
+**Visibility rule** for `posts` and `quotes` (both have a `PUBLIC |
+PRIVATE | JUST_ME` field), based on the viewer's relationship to the
+profile owner:
+
+| relationship | sees |
+|---|---|
+| `self` (own profile) | PUBLIC + PRIVATE + JUST_ME |
+| `friend` (mutual follow — both users follow each other) | PUBLIC + PRIVATE |
+| `stranger` (everyone else, incl. logged-out) | PUBLIC only |
+
+`reviews` are not part of this system — a review is essentially a post
+with a rating attached, and is always public regardless of relationship.
+
+---
+
+### `GET /users/:username`
+Core profile info + counts. `relationship` tells the frontend which of the
+three tiers above applies to this viewer.
+
+**Response**
+```json
+{
+  "user": {
+    "userId": 1, "name": "Jane Doe", "username": "janedoe",
+    "profilePicture": null, "bio": "..."
+  },
+  "isOwnProfile": true,
+  "relationship": "self",
+  "followersCount": 42,
+  "followingCount": 17,
+  "reviewsCount": 5
+}
+```
+`gmail` and `isFirstLogin` are only included in `user` when `isOwnProfile`
+is `true`.
+
+---
+
+### `GET /users/:username/quotes?limit=3`
+Most recent quotes, newest first, filtered by the visibility rule above.
+
+**Response**
+```json
+{
+  "quotes": [
+    {
+      "quoteId": 12, "quote": "...", "visibility": "PUBLIC",
+      "createdAt": "...", "book": { "bookId": 3, "title": "...", "author": "..." }
+    }
+  ]
+}
+```
+
+---
+
+### `GET /users/:username/posts?limit=3&offset=0`
+Paginated, filtered by the visibility rule above. Each post includes its
+like count (post likes only). No comments included.
+
+Call once with `limit=3&offset=0` for a fast first paint, then again with a
+larger `limit` and `offset=3` to load the rest.
+
+**Response**
+```json
+{
+  "posts": [
+    {
+      "postId": 8, "caption": "...", "visibility": "PUBLIC",
+      "createdAt": "...", "likeCount": 4,
+      "book": { "bookId": 3, "title": "...", "author": "..." }
+    }
+  ],
+  "limit": 3,
+  "offset": 0,
+  "hasMore": true
+}
+```
+
+---
+
+### `GET /users/:username/reviews?limit=3&offset=0`
+Paginated, always public — no relationship check applied. Same response
+shape as `posts` above, with `reviewId`, `rating`, `review` instead of
+`postId`/`caption`, and no `visibility` or `likeCount` fields.
