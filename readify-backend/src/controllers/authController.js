@@ -8,6 +8,7 @@ const { sendOtpEmail } = require('../utils/mailer');
 const { signToken } = require('../utils/jwtUtil');
 const { verifyGoogleToken } = require('../config/googleAuth');
 const { isValidUsernameFormat } = require('../utils/usernameUtil');
+const { toPublicUser } = require('../utils/userFormat');
 const onboardingModel = require('../models/onboardingModel');
 
 // Postgres unique_violation error code - used to catch a rare race where two
@@ -18,14 +19,7 @@ function issueTokenForUser(user) {
   return signToken({ userId: user.user_id, username: user.username, gmail: user.gmail });
 }
 
-function publicUser(user) {
-  return {
-    userId: user.user_id,
-    name: user.name,
-    username: user.username,
-    gmail: user.gmail,
-  };
-}
+const publicUser = toPublicUser;
 
 // ---------------------------------------------------------------------------
 // GET /api/auth/check-username?username=janedoe

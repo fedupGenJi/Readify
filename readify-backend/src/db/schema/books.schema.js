@@ -10,6 +10,7 @@ module.exports = {
       published_date DATE,
       cover_image TEXT,
       rating NUMERIC(2,1) DEFAULT 0,
+      no_of_ratings INTEGER DEFAULT 0,
       -- 'catalog' = verified metadata in your book database.
       -- 'user_submitted' = created on the fly because a user posted/reviewed/
       -- quoted a book that wasn't in the catalog yet. Every reference (posts,
@@ -25,6 +26,7 @@ module.exports = {
     // Safe to re-run against a database that was created before these columns existed.
     `ALTER TABLE books ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'catalog';`,
     `ALTER TABLE books ADD COLUMN IF NOT EXISTS added_by INTEGER REFERENCES users(user_id) ON DELETE SET NULL;`,
+    `ALTER TABLE books ADD COLUMN IF NOT EXISTS no_of_ratings INTEGER DEFAULT 0;`,
     `DO $$
      BEGIN
        IF NOT EXISTS (
