@@ -9,14 +9,15 @@ import Home from './pages/home';
 import QuestionsPage from './pages/QuestionsPage';
 import Feed from './pages/feed';
 import BookPage from './pages/BookPage';
-import UserPage from './pages/UserPage';
-
+import ProfilePage from './pages/ProfilePage';
+import { DashboardLayout } from './components/layout/DashboardLayout';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-center" toastOptions={{ duration: 3500 }} />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/questions" element={<QuestionsPage />} />
@@ -24,9 +25,11 @@ export default function App() {
         <Route path="/verify-otp" element={<OtpVerificationPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/signup/complete-profile" element={<GoogleSignupCompletePage />} />
-        <Route path="/feed" element={<Feed/>}/>
-        <Route path="/books" element={<BookPage />} />
-<Route path="/users" element={<UserPage />} />
+
+        {/* Authenticated Dashboard Routes */}
+        <Route path="/feed" element={<DashboardLayout><Feed /></DashboardLayout>} />
+        <Route path="/books" element={<DashboardLayout><BookPage /></DashboardLayout>} />
+        <Route path="/profile" element={<DashboardLayout><ProfilePage /></DashboardLayout>} />
       </Routes>
     </BrowserRouter>
   );
