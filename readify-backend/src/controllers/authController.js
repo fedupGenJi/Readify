@@ -8,6 +8,7 @@ const { sendOtpEmail } = require('../utils/mailer');
 const { signToken } = require('../utils/jwtUtil');
 const { verifyGoogleToken } = require('../config/googleAuth');
 const { isValidUsernameFormat } = require('../utils/usernameUtil');
+const onboardingModel = require('../models/onboardingModel');
 
 // Postgres unique_violation error code - used to catch a rare race where two
 // requests for the same username both pass the initial check at the same time.
@@ -220,7 +221,8 @@ async function login(req, res, next) {
     }
 
     const token = issueTokenForUser(user);
-    return res.json({ token, user: publicUser(user) });
+    const onboardingComplete = await onboardingModel.hasCompleted(user.user_id);
+    return res.json({ token, user: publicUser(user), onboardingComplete });
   } catch (err) {
     next(err);
   }
@@ -258,7 +260,8 @@ async function googleAuth(req, res, next) {
 
     if (user) {
       const token = issueTokenForUser(user);
-      return res.json({ token, user: publicUser(user) });
+      const onboardingComplete = await onboardingModel.hasCompleted(user.user_id);
+      return res.json({ token, user: publicUser(user), onboardingComplete });
     }
 
     // Brand new account - need a username before we can create the user row.
@@ -322,7 +325,7 @@ async function googleCompleteSignup(req, res, next) {
     await tempUserModel.deleteById(pending.id);
 
     const token = issueTokenForUser(user);
-    return res.status(201).json({ token, user: publicUser(user) });
+    return res.status(201).json({ token, user: publicUser(user), onboardingComplete: false });
   } catch (err) {
     next(err);
   }
@@ -335,7 +338,8 @@ async function me(req, res, next) {
   try {
     const user = await userModel.findById(req.user.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
-    return res.json({ user: publicUser(user) });
+    const onboardingComplete = await onboardingModel.hasCompleted(user.user_id);
+    return res.json({ user: publicUser(user), onboardingComplete });
   } catch (err) {
     next(err);
   }

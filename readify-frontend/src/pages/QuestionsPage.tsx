@@ -117,7 +117,7 @@ export default function QuestionsPage() {
       await apiClient.post('/users/reading-preferences', payload);
 
       toast.success('Thanks! Your preferences are saved.');
-      navigate('/home');
+      navigate('/');
     } catch (error) {
       toast.error(extractErrorMessage(error));
     } finally {
@@ -157,8 +157,17 @@ export default function QuestionsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background px-4 py-12 sm:py-16">
+    <div className="flex min-h-screen flex-col bg-background px-4 py-10 sm:py-14">
       <div className="mx-auto w-full max-w-xl">
+        <div className="mb-8 border-l-4 border-primary pl-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">A little reading context</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-text sm:text-3xl">
+            Every great recommendation begins with knowing the reader.
+          </h1>
+          <p className="mt-2 max-w-lg text-sm leading-6 text-textSecondary">
+            These answers help us understand your taste and reading rhythm, so your first recommendations feel personal.
+          </p>
+        </div>
         <div className="mb-8 flex items-center justify-between">
           <div className="flex gap-1.5">
             {STEPS.map((_, index) => (
@@ -281,7 +290,7 @@ export default function QuestionsPage() {
           </Button>
           <Button 
             type="button" 
-            onClick={isLastStep ? () => navigate('/Feed') : goNext} 
+            onClick={goNext}
             isLoading={isLastStep && isSubmitting} 
             className="w-auto"
           >

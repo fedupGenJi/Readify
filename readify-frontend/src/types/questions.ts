@@ -5,7 +5,7 @@ export interface ReadingPreferencesPayload {
   booksRead?: string;
   genres: string[];
   readerStatus: ReaderStatus;
-  recentBookDuration: string;
-  recentBookPace: ReadingPace;
+  recentBookDuration?: string;
+  recentBookPace?: ReadingPace;
   favoriteAuthors?: string;
 }

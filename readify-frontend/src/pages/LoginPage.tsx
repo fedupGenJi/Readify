@@ -46,7 +46,7 @@ export default function LoginPage() {
       if (res.data.token) {
         localStorage.setItem("readify_token", res.data.token);
         showSuccess("Logged in successfully.");
-        navigate("/feed");
+        navigate(res.data.onboardingComplete ? '/' : '/questions');
         return;
       }
 
@@ -95,7 +95,7 @@ export default function LoginPage() {
 
       if (token) localStorage.setItem("readify_token", token);
       showSuccess("Logged in successfully.");
-      navigate("/");
+      navigate(res.data.onboardingComplete ? '/' : '/questions');
     } catch (err: unknown) {
       const message = getFriendlyErrorMessage(err);
       setServerError(message);
