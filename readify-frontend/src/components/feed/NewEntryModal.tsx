@@ -9,8 +9,9 @@ import { lookupAuthorByTitle } from '../../lib/bookLookup';
 import type { CreateEntryPayload, PostVisibility } from '../../types/feed';
 
 interface NewEntryModalProps {
+  isOpen?: boolean;
   onClose: () => void;
-  onSubmit: (payload: CreateEntryPayload) => Promise<void>;
+  onSubmit: (payload: CreateEntryPayload) => Promise<void> | void;
 }
 
 const VISIBILITY_OPTIONS: { value: PostVisibility; label: string }[] = [
@@ -19,7 +20,7 @@ const VISIBILITY_OPTIONS: { value: PostVisibility; label: string }[] = [
   { value: 'only_me', label: 'Only me' },
 ];
 
-export function NewEntryModal({ onClose, onSubmit }: NewEntryModalProps) {
+export function NewEntryModal({ isOpen = true, onClose, onSubmit }: NewEntryModalProps) {
   const [isReview, setIsReview] = useState(true);
   const [bookTitle, setBookTitle] = useState('');
   const [bookAuthor, setBookAuthor] = useState('');
@@ -28,6 +29,8 @@ export function NewEntryModal({ onClose, onSubmit }: NewEntryModalProps) {
   const [content, setContent] = useState('');
   const [visibility, setVisibility] = useState<PostVisibility>('public');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
 
   const handleTitleChange = (value: string) => {
     setBookTitle(value);
