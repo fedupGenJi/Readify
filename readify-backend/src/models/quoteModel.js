@@ -1,41 +1,31 @@
 const pool = require('../config/db');
 
-async function countFollowers(userId) {
-  const { rows } = await pool.query(
-    'SELECT COUNT(*)::int AS count FROM followers WHERE following_id = $1',
-    [userId]
-  );
-  return rows[0].count;
-}
-
-async function countFollowing(userId) {
-  const { rows } = await pool.query(
-    'SELECT COUNT(*)::int AS count FROM followers WHERE follower_id = $1',
-    [userId]
-  );
-  return rows[0].count;
-}
-
-// "Friend" = mutual follow (both users follow each other). If you actually
-// want one-directional ("anyone who follows me can see PRIVATE"), swap the
-// AND for OR below and rename accordingly.
-async function areFriends(userIdA, userIdB) {
+/**
+ * Recent quotes for a profile page, newest first, joined with the book's
+ * title/author.
+ *
+ * `visibilities` is the array of visibility tiers the viewer is allowed to
+ * see - see src/utils/visibility.js.
+ */
+async function findRecentByUser(userId, { limit = 3, visibilities = ['PUBLIC'] } = {}) {
   const { rows } = await pool.query(
     `SELECT
-       EXISTS (SELECT 1 FROM followers WHERE follower_id = $1 AND following_id = $2) AS a_follows_b,
-       EXISTS (SELECT 1 FROM followers WHERE follower_id = $2 AND following_id = $1) AS b_follows_a`,
-    [userIdA, userIdB]
+        q.quote_id,
+        q.quote,
+        q.visibility,
+        q.created_at,
+        q.book_id,
+        b.title AS book_title,
+        b.author AS book_author
+     FROM quotes q
+     JOIN books b ON b.book_id = q.book_id
+     WHERE q.user_id = $1
+       AND q.visibility = ANY($2::text[])
+     ORDER BY q.created_at DESC
+     LIMIT $3`,
+    [userId, visibilities, limit]
   );
-  return rows[0].a_follows_b && rows[0].b_follows_a;
+  return rows;
 }
 
-// Single entry point used by every profile-page endpoint to decide what a
-// viewer is allowed to see. viewerId is undefined/null for logged-out visitors.
-async function getRelationship(viewerId, targetUserId) {
-  if (!viewerId) return 'stranger';
-  if (viewerId === targetUserId) return 'self';
-  const friends = await areFriends(viewerId, targetUserId);
-  return friends ? 'friend' : 'stranger';
-}
-
-module.exports = { countFollowers, countFollowing, areFriends, getRelationship };
+module.exports = { findRecentByUser };
