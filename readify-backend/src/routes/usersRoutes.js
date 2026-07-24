@@ -3,6 +3,16 @@ const router = express.Router();
 
 const profileController = require('../controllers/profileController');
 const optionalAuth = require('../middleware/optionalAuth');
+const requireAuth = require('../middleware/authMiddleware');
+const uploadProfilePicture = require('../middleware/uploadProfilePicture');
+
+// Placed above the /:username routes so it's never shadowed by the param route.
+router.patch(
+  '/me',
+  requireAuth,
+  uploadProfilePicture.single('profilePicture'),
+  profileController.updateMyProfile
+);
 
 // All three work for logged-out visitors (public profile pages), but behave
 // differently if the visitor happens to be logged in as the profile owner.

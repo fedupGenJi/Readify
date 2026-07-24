@@ -15,7 +15,9 @@ function errorHandler(err, req, res, next) {
   if (isDatabaseError) {
     return res.status(503).json({ error: 'Database unavailable. Please try again later.' });
   }
-
+  if (err.name === 'MulterError' || /image/i.test(err.message || '')) {
+    return res.status(400).json({ error: err.message });
+  }
   const status = err.status || 500;
   return res.status(status).json({ error: err.message || 'Internal server error' });
 }

@@ -30,6 +30,7 @@ export default function App() {
         <Route path="/feed" element={<DashboardLayout><Feed /></DashboardLayout>} />
         <Route path="/books" element={<DashboardLayout><BookPage /></DashboardLayout>} />
         <Route path="/profile" element={<DashboardLayout><ProfilePage /></DashboardLayout>} />
+        <Route path="/profile/:username" element={<DashboardLayout><ProfilePage /></DashboardLayout>} />
       </Routes>
     </BrowserRouter>
   );

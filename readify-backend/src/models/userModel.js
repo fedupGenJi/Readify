@@ -51,6 +51,17 @@ async function updatePasswordByGmail(gmail, hashedPassword) {
   return rows[0] || null;
 }
 
+async function updateProfile(userId, { bio, profilePicture }) {
+  const { rows } = await pool.query(
+    `UPDATE users
+     SET bio = $1, profile_picture = $2
+     WHERE user_id = $3
+     RETURNING *`,
+    [bio, profilePicture, userId]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   findByGmail,
   findByUsername,
@@ -59,4 +70,5 @@ module.exports = {
   createUser,
   linkGoogleId,
   updatePasswordByGmail,
+  updateProfile,
 };

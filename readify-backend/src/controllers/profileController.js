@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 const userModel = require('../models/userModel');
 const followerModel = require('../models/followerModel');
 const reviewModel = require('../models/reviewModel');
@@ -5,6 +8,8 @@ const quoteModel = require('../models/quoteModel');
 const postModel = require('../models/postModel');
 const { toPublicUser } = require('../utils/userFormat');
 const { getVisibleTiers } = require('../utils/visibility');
+
+const MAX_BIO_LENGTH = 500;
 
 // ---------------------------------------------------------------------------
 // GET /api/users/:username
@@ -164,4 +169,52 @@ async function getReviews(req, res, next) {
   }
 }
 
-module.exports = { getProfile, getRecentQuotes, getPosts, getReviews };
+// ---------------------------------------------------------------------------
+// PATCH /api/users/me   (protected, requireAuth)
+// multipart/form-data with:
+//   - optional text field  "bio"
+//   - optional file field  "profilePicture" (jpeg/png/webp/gif, max 5MB)
+// Only the fields actually sent get changed - matches userModel.updateProfile's
+// COALESCE behavior. If a new picture is uploaded, the previous locally-
+// stored file is deleted (best-effort, never blocks the response).
+// ---------------------------------------------------------------------------
+async function updateMyProfile(req, res, next) {
+  try {
+    const userId = req.user.userId;
+    const { bio } = req.body;
+
+    if (bio !== undefined && bio.length > MAX_BIO_LENGTH) {
+      return res.status(400).json({ error: `Bio must be ${MAX_BIO_LENGTH} characters or fewer` });
+    }
+
+    let profilePicture;
+    let oldPicturePath;
+    if (req.file) {
+      profilePicture = `/uploads/profile-pictures/${req.file.filename}`;
+
+      const currentUser = await userModel.findById(userId);
+      if (currentUser?.profile_picture?.startsWith('/uploads/profile-pictures/')) {
+        oldPicturePath = path.join(
+          __dirname,
+          '../../uploads/profile-pictures',
+          path.basename(currentUser.profile_picture)
+        );
+      }
+    }
+
+    const updatedUser = await userModel.updateProfile(userId, { bio, profilePicture });
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (oldPicturePath) {
+      fs.unlink(oldPicturePath, () => {}); // best-effort, ignore failures
+    }
+
+    return res.json({ user: toPublicUser(updatedUser) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getProfile, getRecentQuotes, getPosts, getReviews, updateMyProfile };

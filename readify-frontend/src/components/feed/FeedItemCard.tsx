@@ -28,6 +28,7 @@ interface FeedItemCardProps {
     onToggleRepost: (id: string) => void;
     onAddComment: (itemId: string, parentCommentId: string | null, content: string) => void;
     onDelete: (id: string) => void;
+    canDelete?: boolean;
 }
 
 export function FeedItemCard({
@@ -38,6 +39,7 @@ export function FeedItemCard({
     onToggleRepost,
     onAddComment,
     onDelete,
+    canDelete = true,
 }: FeedItemCardProps) {
     const [showComments, setShowComments] = useState(false);
     const totalComments = countComments(item.comments);
@@ -85,21 +87,23 @@ export function FeedItemCard({
                         <div className="flex shrink-0 items-center gap-2">
                             <span className="text-xs text-textSecondary">{formatRelativeTime(item.createdAt)}</span>
 
-                            <DropdownMenu trigger={<MoreHorizontalIcon className="h-4 w-4" />}>
-                                {(close) => (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            onDelete(item.id);
-                                            close();
-                                        }}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50"
-                                    >
-                                        <TrashIcon className="h-4 w-4" />
-                                        Delete {item.type === 'review' ? 'review' : 'post'}
-                                    </button>
-                                )}
-                            </DropdownMenu>
+                            {canDelete && (
+                                <DropdownMenu trigger={<MoreHorizontalIcon className="h-4 w-4" />}>
+                                    {(close) => (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                onDelete(item.id);
+                                                close();
+                                            }}
+                                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50"
+                                        >
+                                            <TrashIcon className="h-4 w-4" />
+                                            Delete {item.type === 'review' ? 'review' : 'post'}
+                                        </button>
+                                    )}
+                                </DropdownMenu>
+                            )}
                         </div>
                     </div>
 

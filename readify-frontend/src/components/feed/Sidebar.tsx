@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { BookOpenIcon, CompassIcon, HomeIcon, SearchIcon, SettingsIcon, UserIcon } from '../icons';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { BookOpenIcon, CompassIcon, HomeIcon, LogOutIcon, SearchIcon, SettingsIcon, UserIcon } from '../icons';
 
 interface NavItem {
   label: string;
@@ -19,6 +19,12 @@ const NAV_ITEMS: NavItem[] = [
 
 export function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('readify_token');
+    navigate('/login', { replace: true });
+  };
 
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-gray-100 bg-card px-4 py-6 lg:flex">
@@ -48,6 +54,15 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-textSecondary transition-colors hover:bg-gray-100 hover:text-text"
+      >
+        <LogOutIcon className="h-5 w-5" />
+        Log out
+      </button>
     </aside>
   );
 }

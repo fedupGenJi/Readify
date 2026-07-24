@@ -26,6 +26,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.get('/health', (req, res) => {
   if (!app.locals.dbReady) {
     return res.status(503).json({ status: 'db-unavailable', database: 'unavailable' });

@@ -283,3 +283,16 @@ larger `limit` and `offset=3` to load the rest.
 Paginated, always public — no relationship check applied. Same response
 shape as `posts` above, with `reviewId`, `rating`, `review` instead of
 `postId`/`caption`, and no `visibility` or `likeCount` fields.
+
+### `PATCH /users/me` 🔒 *protected, multipart/form-data*
+Update your own bio and/or profile picture. Only fields actually sent are changed.
+
+**Fields**
+- `bio` (text, optional) — max 500 characters
+- `profilePicture` (file, optional) — JPEG/PNG/WEBP/GIF, max 5MB
+
+**Response**
+```json
+{ "user": { "userId": 1, "name": "...", "username": "...", "gmail": "...", "profilePicture": "/uploads/profile-pictures/...", "bio": "...", "isFirstLogin": false } }
+```
+**Errors:** `400` bio too long or invalid image type/size · `404` user not found

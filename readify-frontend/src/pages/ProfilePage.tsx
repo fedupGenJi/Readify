@@ -1,68 +1,158 @@
-import { useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { CURRENT_USER, MOCK_FEED_ITEMS, MOCK_SUGGESTED_READERS } from '../lib/mockFeedData';
+import { useParams } from 'react-router-dom';
+import { MOCK_SUGGESTED_READERS } from '../lib/mockFeedData';
 import { FeedItemCard } from '../components/feed/FeedItemCard';
 import { NewEntryModal } from '../components/feed/NewEntryModal';
 import { PlusIcon } from '../components/icons';
+import { Avatar } from '../components/ui/Avatar';
 import type { CreateEntryPayload, FeedComment, FeedItem } from '../types/feed';
+import apiClient from '../lib/api';
 
-export default function ProfilePage() {
-  // TODO: Backend Integration - Replace with API call to fetch posts for the current user
-  // e.g., useEffect(() => { api.get(`/api/users/${CURRENT_USER.id}/posts`).then(setPosts); }, []);
-  const initialUserPosts = MOCK_FEED_ITEMS.filter(
-    (item) => item.author.name.toLowerCase() === CURRENT_USER.name.toLowerCase()
-  );
+interface BackendUser {
+  userId: number;
+  name: string;
+  username: string;
+  profilePicture: string | null;
+  bio: string | null;
+}
 
-  // If no mock posts match the current user, create an initial post authored by them
-  const defaultUserPost: FeedItem = {
-    id: 'user-post-1',
+interface ProfileResponse {
+  user: BackendUser;
+  isOwnProfile: boolean;
+  relationship: 'self' | 'friend' | 'stranger';
+  followersCount: number;
+  followingCount: number;
+}
+
+interface BackendPost {
+  postId: number;
+  caption: string;
+  visibility: 'PUBLIC' | 'PRIVATE' | 'JUST_ME';
+  createdAt: string;
+  likeCount: number;
+  book: { bookId: number; title: string; author: string } | null;
+}
+
+interface BackendQuote {
+  quoteId: number;
+  quote: string;
+}
+
+function toFeedItem(post: BackendPost, profile: BackendUser): FeedItem {
+  return {
+    id: String(post.postId),
     type: 'post',
-    author: { id: CURRENT_USER.id, name: CURRENT_USER.name, username: CURRENT_USER.name.toLowerCase() },
-    book: {
-      id: 'book-1',
-      title: 'Tomorrow, and Tomorrow, and Tomorrow',
-      author: 'Gabrielle Zevin',
-      rating: 5,
+    author: {
+      id: String(profile.userId),
+      name: profile.name,
+      username: profile.username,
+      avatarUrl: profile.profilePicture ?? undefined,
     },
-    content: 'this novel is good.',
-    createdAt: new Date().toISOString(),
-    visibility: 'public',
-    likeCount: 10,
-    commentCount: 3,
-    repostCount: 2,
+    book: post.book
+      ? { id: String(post.book.bookId), title: post.book.title, author: post.book.author, rating: 0 }
+      : undefined,
+    content: post.caption,
+    createdAt: post.createdAt,
+    visibility: post.visibility === 'JUST_ME' ? 'only_me' : (post.visibility.toLowerCase() as 'public' | 'private'),
+    likeCount: post.likeCount,
+    commentCount: 0,
+    repostCount: 0,
     likedByMe: false,
     bookmarkedByMe: false,
     repostedByMe: false,
-    comments: [
-      {
-        id: 'comment-1',
-        author: { id: 'user-2', name: 'Kaley', username: 'kaleydon' },
-        content: 'the book is fire, this is what i desired.',
-        createdAt: new Date().toISOString(),
-        replies: [],
-      },
-    ],
+    comments: [],
   };
+}
 
-  const [posts, setPosts] = useState<FeedItem[]>(
-    initialUserPosts.length > 0 ? initialUserPosts : [defaultUserPost]
-  );
+export default function ProfilePage() {
+  const { username: viewedUsername } = useParams<{ username: string }>();
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [viewer, setViewer] = useState<BackendUser | null>(null);
+  const [posts, setPosts] = useState<FeedItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
-  const [quotes, setQuotes] = useState<string[]>([
-    'Not all those who wander are lost. — Tolkien',
-    'It does not do to dwell on dreams and forget to live. — Rowling',
-    'The only way out of the labyrinth of suffering is to forgive. — Green',
-  ]);
+  const [quotes, setQuotes] = useState<string[]>([]);
   const [newQuoteText, setNewQuoteText] = useState('');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [bioDraft, setBioDraft] = useState('');
+  const [profilePictureDraft, setProfilePictureDraft] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   
   // Modal state for followers/following lists
   const [activeModal, setActiveModal] = useState<'followers' | 'following' | null>(null);
 
-  // TODO: Backend Integration - State to hold fetched followers/following database records when modal opens
-  // const [modalUsers, setModalUsers] = useState<User[]>([]);
+  useEffect(() => {
+    let isCurrentRequest = true;
+
+    async function loadProfile() {
+      setIsLoading(true);
+      setLoadError('');
+      try {
+        const viewerResponse = await apiClient.get<{ user: BackendUser }>('/auth/me');
+        const currentViewer = viewerResponse.data.user;
+        const username = viewedUsername ?? currentViewer.username;
+        const [profileResponse, postsResponse, quotesResponse] = await Promise.all([
+          apiClient.get<ProfileResponse>(`/users/${encodeURIComponent(username)}`),
+          apiClient.get<{ posts: BackendPost[] }>(`/users/${encodeURIComponent(username)}/posts`, {
+            params: { limit: 30, offset: 0 },
+          }),
+          apiClient.get<{ quotes: BackendQuote[] }>(`/users/${encodeURIComponent(username)}/quotes`, {
+            params: { limit: 20 },
+          }),
+        ]);
+
+        if (!isCurrentRequest) return;
+        setViewer(currentViewer);
+        setProfile(profileResponse.data);
+        setPosts(postsResponse.data.posts.map((post) => toFeedItem(post, profileResponse.data.user)));
+        setQuotes(quotesResponse.data.quotes.map((quote) => quote.quote));
+        setBioDraft(profileResponse.data.user.bio ?? '');
+        setProfilePictureDraft(profileResponse.data.user.profilePicture ?? '');
+      } catch {
+        if (!isCurrentRequest) return;
+        setLoadError('Unable to load this profile. Please try again.');
+        setProfile(null);
+        setPosts([]);
+        setQuotes([]);
+      } finally {
+        if (isCurrentRequest) setIsLoading(false);
+      }
+    }
+
+    void loadProfile();
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [viewedUsername]);
+
+  const currentUserName = viewer?.name ?? profile?.user.name ?? '';
+  const isOwnProfile = profile?.isOwnProfile ?? false;
+
+  const handleSaveProfile = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!isOwnProfile || isSavingProfile) return;
+
+    setIsSavingProfile(true);
+    try {
+      const response = await apiClient.put<{ user: BackendUser }>('/users/me/profile', {
+        bio: bioDraft,
+        profilePicture: profilePictureDraft,
+      });
+      setProfile((current) => (current ? { ...current, user: response.data.user } : current));
+      setIsEditingProfile(false);
+      toast.success('Profile updated');
+    } catch {
+      toast.error('Unable to update your profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const handleDeleteItem = (id: string) => {
+    if (!isOwnProfile) return;
     // TODO: Backend Integration - API call to delete post from database
     // await api.delete(`/api/posts/${id}`);
     setPosts((current) => current.filter((item) => item.id !== id));
@@ -114,7 +204,7 @@ export default function ProfilePage() {
     // await api.post(`/api/posts/${itemId}/comments`, { content, parentCommentId: _parentCommentId });
     const newComment: FeedComment = {
       id: `comment-${Date.now()}`,
-      author: { id: CURRENT_USER.id, name: CURRENT_USER.name, username: CURRENT_USER.name.toLowerCase() },
+      author: { id: String(viewer?.userId ?? ''), name: currentUserName, username: viewer?.username ?? '' },
       content,
       createdAt: new Date().toISOString(),
       replies: [],
@@ -136,7 +226,8 @@ export default function ProfilePage() {
   const handleCreateEntry = async (payload: CreateEntryPayload) => {
     // TODO: Backend Integration - API call to create a new post/review entry in DB
     // const response = await api.post('/api/posts', payload);
-    const author = { id: CURRENT_USER.id, name: CURRENT_USER.name, username: CURRENT_USER.name.toLowerCase() };
+    if (!viewer || !isOwnProfile) return;
+    const author = { id: String(viewer.userId), name: viewer.name, username: viewer.username };
     const book = {
       id: `book-${Date.now()}`,
       title: payload.bookTitle,
@@ -165,7 +256,7 @@ export default function ProfilePage() {
     toast.success(payload.isReview ? 'Review published!' : 'Posted!');
   };
 
-  const handleAddQuote = (e: React.FormEvent) => {
+  const handleAddQuote = (e: FormEvent) => {
     e.preventDefault();
     if (!newQuoteText.trim()) return;
     // TODO: Backend Integration - API call to persist quote in DB
@@ -182,21 +273,60 @@ export default function ProfilePage() {
 
   return (
     <div className="w-full space-y-8 pb-12">
+      {isLoading && <p className="text-sm text-textSecondary">Loading profile...</p>}
+      {!isLoading && loadError && <p className="text-sm text-error">{loadError}</p>}
+      {!isLoading && !profile && !loadError && <p className="text-sm text-textSecondary">Profile not found.</p>}
+
+      {!isLoading && profile && (
+        <>
       {/* Profile Header */}
       <div className="flex items-start gap-6">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-primary/10 border-2 border-white shadow-md">
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
-            alt={CURRENT_USER.name}
-            className="h-full w-full object-cover"
-          />
-        </div>
+        <Avatar name={profile.user.name} src={profile.user.profilePicture ?? undefined} size="lg" className="h-24 w-24 border-2 border-white text-2xl shadow-md" />
         <div className="space-y-1 flex-1">
-          <h1 className="text-2xl font-bold text-text">{CURRENT_USER.name}</h1>
-          <p className="text-sm text-textSecondary">@alexreads</p>
-          <p className="pt-1 text-sm text-text leading-relaxed max-w-lg">
-            Literary fiction devotee. Fantasy explorer. 📖 Reading my way through the world.
-          </p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-text">{profile.user.name}</h1>
+            {isOwnProfile && (
+              <button
+                type="button"
+                onClick={() => setIsEditingProfile((current) => !current)}
+                className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-textSecondary hover:bg-gray-50"
+              >
+                {isEditingProfile ? 'Cancel' : 'Edit profile'}
+              </button>
+            )}
+          </div>
+          <p className="text-sm text-textSecondary">@{profile.user.username}</p>
+          {isEditingProfile ? (
+            <form onSubmit={handleSaveProfile} className="max-w-lg space-y-2 pt-2">
+              <textarea
+                value={bioDraft}
+                onChange={(event) => setBioDraft(event.target.value)}
+                maxLength={500}
+                placeholder="Tell readers about yourself..."
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                rows={3}
+              />
+              <input
+                type="url"
+                value={profilePictureDraft}
+                onChange={(event) => setProfilePictureDraft(event.target.value)}
+                placeholder="Profile picture URL"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <button
+                type="submit"
+                disabled={isSavingProfile}
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingProfile ? 'Saving...' : 'Save changes'}
+              </button>
+            </form>
+          ) : (
+            <p className="pt-1 text-sm text-text leading-relaxed max-w-lg">{profile.user.bio ?? ''}</p>
+          )}
+          {!profile.isOwnProfile && (
+            <p className="pt-1 text-xs font-medium capitalize text-primary">{profile.relationship}</p>
+          )}
           <div className="flex gap-8 pt-3 text-sm">
             <button
               type="button"
@@ -204,7 +334,7 @@ export default function ProfilePage() {
               onClick={() => setActiveModal('followers')}
               className="hover:opacity-80 transition-opacity text-left"
             >
-              <span className="font-bold text-text">3</span>{' '}
+              <span className="font-bold text-text">{profile.followersCount}</span>{' '}
               <span className="text-textSecondary">Followers</span>
             </button>
             <button
@@ -213,7 +343,7 @@ export default function ProfilePage() {
               onClick={() => setActiveModal('following')}
               className="hover:opacity-80 transition-opacity text-left"
             >
-              <span className="font-bold text-text">3</span>{' '}
+              <span className="font-bold text-text">{profile.followingCount}</span>{' '}
               <span className="text-textSecondary">Following</span>
             </button>
             <div>
@@ -232,14 +362,14 @@ export default function ProfilePage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-text pb-2 border-b-2 border-primary">Posts</h2>
-            <button
+            {isOwnProfile && <button
               type="button"
               onClick={() => setIsEntryModalOpen(true)}
               className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors duration-150 hover:bg-primary/90"
             >
               <PlusIcon className="h-3.5 w-3.5" />
               New Post
-            </button>
+            </button>}
           </div>
 
           <div className="space-y-4">
@@ -248,7 +378,7 @@ export default function ProfilePage() {
                 <FeedItemCard
                   key={item.id}
                   item={item}
-                  currentUserName={CURRENT_USER.name}
+                  currentUserName={currentUserName}
                   onToggleLike={handleToggleLike}
                   onToggleBookmark={handleToggleBookmark}
                   onToggleRepost={handleToggleRepost}
@@ -261,14 +391,14 @@ export default function ProfilePage() {
             {posts.length === 0 && (
               <div className="rounded-2xl border border-dashed border-gray-200 bg-card p-10 text-center">
                 <p className="text-sm font-medium text-text">No posts published yet.</p>
-                <p className="mt-1 text-sm text-textSecondary">Click "New Post" to share what you're reading.</p>
+                {isOwnProfile && <p className="mt-1 text-sm text-textSecondary">Click "New Post" to share what you're reading.</p>}
               </div>
             )}
           </div>
         </div>
 
         {/* Right: Quotes Section */}
-        <div className="lg:col-span-1">
+        {(quotes.length > 0 || isOwnProfile) && <div className="lg:col-span-1">
           <div className="rounded-2xl border border-gray-100 bg-card p-6 shadow-sm space-y-4 sticky top-24">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-text flex items-center gap-2">
@@ -302,7 +432,7 @@ export default function ProfilePage() {
               </button>
             </form>
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Followers / Following Instagram-Style Modal */}
@@ -361,6 +491,8 @@ export default function ProfilePage() {
           <NewEntryModal key="entry-modal" onClose={() => setIsEntryModalOpen(false)} onSubmit={handleCreateEntry} />
         )}
       </AnimatePresence>
+        </>
+      )}
     </div>
   );
 }

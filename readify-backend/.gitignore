@@ -41,3 +41,5 @@ Thumbs.db
 # Optional: local Postgres dumps/backups if you ever export data locally
 *.sql.bak
 *.dump
+
+uploads/
