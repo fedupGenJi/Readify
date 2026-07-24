@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useParams } from 'react-router-dom';
-import { MOCK_SUGGESTED_READERS } from '../lib/mockFeedData';
 import { FeedItemCard } from '../components/feed/FeedItemCard';
 import { NewEntryModal } from '../components/feed/NewEntryModal';
 import { PlusIcon } from '../components/icons';
@@ -10,7 +9,6 @@ import { Avatar } from '../components/ui/Avatar';
 import type { CreateEntryPayload, FeedComment, FeedItem } from '../types/feed';
 import apiClient from '../lib/api';
 
-<<<<<<< HEAD
 interface BackendUser {
   userId: number;
   name: string;
@@ -44,16 +42,6 @@ interface BackendQuote {
 function toFeedItem(post: BackendPost, profile: BackendUser): FeedItem {
   return {
     id: String(post.postId),
-=======
-export default function ProfilePage() {
-  // TODO: Backend Integration - Replace with API call to fetch posts for the current user
-  const initialUserPosts = MOCK_FEED_ITEMS.filter(
-    (item) => item.author.name.toLowerCase() === CURRENT_USER.name.toLowerCase()
-  );
-
-  const defaultUserPost: FeedItem = {
-    id: 'user-post-1',
->>>>>>> 9d557dd287c478a5ff2fe80075cef3d22028ff7f
     type: 'post',
     author: {
       id: String(profile.userId),
@@ -87,15 +75,14 @@ export default function ProfilePage() {
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [quotes, setQuotes] = useState<string[]>([]);
   const [newQuoteText, setNewQuoteText] = useState('');
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [activeProfileEditor, setActiveProfileEditor] = useState<'bio' | 'photo' | null>(null);
   const [bioDraft, setBioDraft] = useState('');
   const [profilePictureDraft, setProfilePictureDraft] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  
+
   // Modal state for followers/following lists
   const [activeModal, setActiveModal] = useState<'followers' | 'following' | null>(null);
 
-<<<<<<< HEAD
   useEffect(() => {
     let isCurrentRequest = true;
 
@@ -154,7 +141,7 @@ export default function ProfilePage() {
         profilePicture: profilePictureDraft,
       });
       setProfile((current) => (current ? { ...current, user: response.data.user } : current));
-      setIsEditingProfile(false);
+      setActiveProfileEditor(null);
       toast.success('Profile updated');
     } catch {
       toast.error('Unable to update your profile');
@@ -163,8 +150,6 @@ export default function ProfilePage() {
     }
   };
 
-=======
->>>>>>> 9d557dd287c478a5ff2fe80075cef3d22028ff7f
   const handleDeleteItem = (id: string) => {
     if (!isOwnProfile) return;
     // TODO: Backend Integration - API call to delete post from database
@@ -229,14 +214,10 @@ export default function ProfilePage() {
   };
 
   const handleCreateEntry = async (payload: CreateEntryPayload) => {
-<<<<<<< HEAD
     // TODO: Backend Integration - API call to create a new post/review entry in DB
     // const response = await api.post('/api/posts', payload);
     if (!viewer || !isOwnProfile) return;
     const author = { id: String(viewer.userId), name: viewer.name, username: viewer.username };
-=======
-    const author = { id: CURRENT_USER.id, name: CURRENT_USER.name, username: CURRENT_USER.name.toLowerCase() };
->>>>>>> 9d557dd287c478a5ff2fe80075cef3d22028ff7f
     const book = {
       id: `book-${Date.now()}`,
       title: payload.bookTitle,
@@ -279,12 +260,7 @@ export default function ProfilePage() {
     toast.success('Quote removed');
   };
 
-  const handleToggleFollowUser = (_targetUserId: string) => {
-    // TODO: Backend Integration - Handler for follow/unfollow
-  };
-
   return (
-<<<<<<< HEAD
     <div className="w-full space-y-8 pb-12">
       {isLoading && <p className="text-sm text-textSecondary">Loading profile...</p>}
       {!isLoading && loadError && <p className="text-sm text-error">{loadError}</p>}
@@ -292,66 +268,100 @@ export default function ProfilePage() {
 
       {!isLoading && profile && (
         <>
-      {/* Profile Header */}
-      <div className="flex items-start gap-6">
-        <Avatar name={profile.user.name} src={profile.user.profilePicture ?? undefined} size="lg" className="h-24 w-24 border-2 border-white text-2xl shadow-md" />
-=======
-    <div className="w-full space-y-8 pb-12 max-w-5xl mx-auto">
-      {/* Profile Header */}
-      <div className="flex items-start gap-6 bg-card rounded-2xl border border-gray-100 p-6 shadow-sm">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-primary/10 border-2 border-white shadow-md">
-          <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80"
-            alt={CURRENT_USER.name}
-            className="h-full w-full object-cover"
-          />
-        </div>
->>>>>>> 9d557dd287c478a5ff2fe80075cef3d22028ff7f
-        <div className="space-y-1 flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-text">{profile.user.name}</h1>
-            {isOwnProfile && (
-              <button
-                type="button"
-                onClick={() => setIsEditingProfile((current) => !current)}
-                className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-textSecondary hover:bg-gray-50"
-              >
-                {isEditingProfile ? 'Cancel' : 'Edit profile'}
-              </button>
-            )}
-          </div>
-          <p className="text-sm text-textSecondary">@{profile.user.username}</p>
-          {isEditingProfile ? (
-            <form onSubmit={handleSaveProfile} className="max-w-lg space-y-2 pt-2">
-              <textarea
-                value={bioDraft}
-                onChange={(event) => setBioDraft(event.target.value)}
-                maxLength={500}
-                placeholder="Tell readers about yourself..."
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                rows={3}
-              />
-              <input
-                type="url"
-                value={profilePictureDraft}
-                onChange={(event) => setProfilePictureDraft(event.target.value)}
-                placeholder="Profile picture URL"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              <button
-                type="submit"
-                disabled={isSavingProfile}
-                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSavingProfile ? 'Saving...' : 'Save changes'}
-              </button>
-            </form>
-          ) : (
-            <p className="pt-1 text-sm text-text leading-relaxed max-w-lg">{profile.user.bio ?? ''}</p>
-          )}
-          {!profile.isOwnProfile && (
-            <p className="pt-1 text-xs font-medium capitalize text-primary">{profile.relationship}</p>
-          )}
+          {/* Profile Header */}
+          <div className="flex items-start gap-6 rounded-2xl border border-gray-100 bg-card p-6 shadow-sm">
+            <Avatar
+              name={profile.user.name}
+              src={profile.user.profilePicture ?? undefined}
+              size="lg"
+              className="h-24 w-24 border-2 border-white text-2xl shadow-md"
+            />
+            <div className="flex-1 space-y-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-bold text-text">{profile.user.name}</h1>
+                {isOwnProfile && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveProfileEditor((current) => (current === 'photo' ? null : 'photo'))}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-textSecondary hover:bg-gray-50"
+                    >
+                      {activeProfileEditor === 'photo' ? 'Cancel photo' : 'Change photo'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveProfileEditor((current) => (current === 'bio' ? null : 'bio'))}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-textSecondary hover:bg-gray-50"
+                    >
+                      {activeProfileEditor === 'bio' ? 'Cancel bio' : 'Edit bio'}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-textSecondary">@{profile.user.username}</p>
+              {isOwnProfile && activeProfileEditor === 'photo' && (
+                <form onSubmit={handleSaveProfile} className="max-w-lg space-y-2 pt-1">
+                  <input
+                    type="url"
+                    value={profilePictureDraft}
+                    onChange={(event) => setProfilePictureDraft(event.target.value)}
+                    placeholder="Profile picture URL"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingProfile}
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingProfile ? 'Saving...' : 'Save photo'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveProfileEditor(null)}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-textSecondary hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+              {isOwnProfile && activeProfileEditor === 'bio' && (
+                <form onSubmit={handleSaveProfile} className="max-w-lg space-y-2 pt-1">
+                  <textarea
+                    value={bioDraft}
+                    onChange={(event) => setBioDraft(event.target.value)}
+                    maxLength={500}
+                    placeholder="Tell readers about yourself..."
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    rows={3}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingProfile}
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingProfile ? 'Saving...' : 'Save bio'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveProfileEditor(null)}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-textSecondary hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+              {!activeProfileEditor && (
+                <p className="pt-1 text-sm leading-relaxed text-text max-w-lg">
+                  {profile.user.bio?.trim() ? profile.user.bio : 'No bio available right now.'}
+                </p>
+              )}
+              {!profile.isOwnProfile && (
+                <p className="pt-1 text-xs font-medium capitalize text-primary">{profile.relationship}</p>
+              )}
           <div className="flex gap-8 pt-3 text-sm">
             <button
               type="button"
@@ -382,20 +392,17 @@ export default function ProfilePage() {
         {/* Left: Posts Section */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
-<<<<<<< HEAD
-            <h2 className="text-lg font-bold text-text pb-2 border-b-2 border-primary">Posts</h2>
-            {isOwnProfile && <button
-=======
-            <h2 className="text-lg font-bold text-text pb-2">Posts</h2>
-            <button
->>>>>>> 9d557dd287c478a5ff2fe80075cef3d22028ff7f
-              type="button"
-              onClick={() => setIsEntryModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors duration-150 hover:bg-primary/90"
-            >
-              <PlusIcon className="h-3.5 w-3.5" />
-              New Post
-            </button>}
+            <h2 className="border-b-2 border-primary pb-2 text-lg font-bold text-text">Posts</h2>
+            {isOwnProfile && (
+              <button
+                type="button"
+                onClick={() => setIsEntryModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors duration-150 hover:bg-primary/90"
+              >
+                <PlusIcon className="h-3.5 w-3.5" />
+                New Post
+              </button>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -416,56 +423,54 @@ export default function ProfilePage() {
 
             {posts.length === 0 && (
               <div className="rounded-2xl border border-dashed border-gray-200 bg-card p-10 text-center">
-                <p className="text-sm font-medium text-text">No posts published yet.</p>
-                {isOwnProfile && <p className="mt-1 text-sm text-textSecondary">Click "New Post" to share what you're reading.</p>}
+                <p className="text-sm font-medium text-text">No posts available right now.</p>
+                {isOwnProfile && <p className="mt-1 text-sm text-textSecondary">Share your first update by creating a new post.</p>}
               </div>
             )}
           </div>
         </div>
 
-<<<<<<< HEAD
         {/* Right: Quotes Section */}
-        {(quotes.length > 0 || isOwnProfile) && <div className="lg:col-span-1">
-          <div className="rounded-2xl border border-gray-100 bg-card p-6 shadow-sm space-y-4 sticky top-24">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-text flex items-center gap-2">
-=======
-        {/* Right: Optimized Quotes Section */}
         <div className="lg:col-span-1">
-          <div className="rounded-2xl border border-gray-100 bg-card p-6 shadow-sm space-y-4 sticky top-6">
+          <div className="sticky top-6 space-y-4 rounded-2xl border border-gray-100 bg-card p-6 shadow-sm">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-text flex items-center gap-2 text-sm">
->>>>>>> 9d557dd287c478a5ff2fe80075cef3d22028ff7f
+              <h3 className="flex items-center gap-2 text-sm font-bold text-text">
                 <span>🎉</span> Quotes
               </h3>
-              <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                 {quotes.length} saved
               </span>
             </div>
 
-            <ul className="space-y-3 text-sm text-text max-h-[320px] overflow-y-auto pr-1">
-              {quotes.map((quote, index) => (
-                <li
-                  key={index}
-                  className="group relative flex items-start justify-between gap-3 text-xs leading-relaxed border-b border-gray-50 pb-3 last:border-0 last:pb-0"
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    <span className="italic text-textSecondary font-medium">"{quote}"</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteQuote(index)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-textSecondary hover:text-red-500 shrink-0"
-                    title="Remove quote"
+            {quotes.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/60 p-4 text-center text-sm text-textSecondary">
+                No quotes available right now.
+              </div>
+            ) : (
+              <ul className="max-h-[320px] space-y-3 overflow-y-auto pr-1 text-sm text-text">
+                {quotes.map((quote, index) => (
+                  <li
+                    key={index}
+                    className="group relative flex items-start justify-between gap-3 border-b border-gray-50 pb-3 text-xs leading-relaxed last:border-0 last:pb-0"
                   >
-                    &times;
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <div className="flex items-start gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                      <span className="font-medium italic text-textSecondary">"{quote}"</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteQuote(index)}
+                      className="shrink-0 text-textSecondary opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+                      title="Remove quote"
+                    >
+                      &times;
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
 
-            <form onSubmit={handleAddQuote} className="pt-3 border-t border-gray-100 space-y-2">
+            <form onSubmit={handleAddQuote} className="space-y-2 border-t border-gray-100 pt-3">
               <textarea
                 value={newQuoteText}
                 onChange={(e) => setNewQuoteText(e.target.value)}
@@ -481,7 +486,7 @@ export default function ProfilePage() {
               </button>
             </form>
           </div>
-        </div>}
+        </div>
       </div>
 
       {/* Followers / Following Modal */}
@@ -496,7 +501,7 @@ export default function ProfilePage() {
             >
               <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
                 <h3 className="font-bold text-text capitalize">
-                  {activeModal} ({activeModal === 'followers' ? '3' : '3'})
+                  {activeModal} ({activeModal === 'followers' ? profile?.followersCount ?? 0 : profile?.followingCount ?? 0})
                 </h3>
                 <button
                   type="button"
@@ -507,27 +512,18 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              <div className="max-h-80 overflow-y-auto p-4 space-y-3">
-                {MOCK_SUGGESTED_READERS.map((reader) => (
-                  <div key={reader.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-xl transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm">
-                        {reader.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-text">{reader.name}</p>
-                        <p className="text-xs text-textSecondary">@{reader.username}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleFollowUser(reader.id)}
-                      className="rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
-                    >
-                      {activeModal === 'following' ? 'Following' : 'Follow'}
-                    </button>
+              <div className="max-h-80 overflow-y-auto p-4">
+                {(activeModal === 'followers' && (profile?.followersCount ?? 0) === 0) || (activeModal === 'following' && (profile?.followingCount ?? 0) === 0) ? (
+                  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-textSecondary">
+                    {activeModal === 'followers' ? 'No followers available right now.' : 'No following available right now.'}
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-textSecondary">
+                      {activeModal === 'followers' ? 'Followers will appear here once they are available.' : 'People you follow will appear here once they are available.'}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
